@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+
 package org.springframework.cloud.bootstrap;
 
 import org.springframework.context.annotation.Configuration;
@@ -24,6 +25,21 @@ import org.springframework.context.annotation.Import;
  *
  * @author Spencer Gibb
  */
+/**
+ * BootstrapImportSelectorConfiguration 会通过 @Import 导入 {@link BootstrapImportSelector}
+ * 其回调方法 {@link BootstrapImportSelector#selectImports(AnnotationMetadata)} 的逻辑是
+ *  1. 读取 META-INF/spring.factories 获取key为BootstrapConfiguration的值
+ *  2. 获取属性 spring.cloud.bootstrap.sources 的值
+ *  3. 合并第一第二的值，然后排序
+ *  4. 会将值注册到容器中,作为容器的配置类
+ *
+ * 而
+ * spring-cloud-context.jar!/META-INF/spring.factories 中定义了
+ *  org.springframework.cloud.bootstrap.BootstrapConfiguration = org.springframework.cloud.bootstrap.config.PropertySourceBootstrapConfiguration
+ *
+ * 也就是 {@link PropertySourceBootstrapConfiguration} 会注册到 bootstrapContext 中，
+ * 它是 ApplicationContextInitializer 类型的，最终会用来初始化 context
+ * */
 @Configuration(proxyBeanMethods = false)
 @Import(BootstrapImportSelector.class)
 public class BootstrapImportSelectorConfiguration {

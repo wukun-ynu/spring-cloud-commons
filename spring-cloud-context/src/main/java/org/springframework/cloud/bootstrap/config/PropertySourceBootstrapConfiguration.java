@@ -60,9 +60,44 @@ import static org.springframework.cloud.bootstrap.encrypt.AbstractEnvironmentDec
 import static org.springframework.core.env.StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME;
 
 /**
- * @author Dave Syer
+ * PropertySourceBootstrapConfiguration 是用来初始化IOC容器的，其初始化逻辑是扩展IOC容器的Environment，
+ * 可以自定义 PropertySourceLocator 用来扩展 Environment
  *
- */
+ * {@link PropertySourceBootstrapConfiguration#initialize(ConfigurableApplicationContext)}
+ *
+ * 1. 通过依赖注入对属性赋值
+ *     @Autowired(required = false)
+ *     private List<PropertySourceLocator> propertySourceLocators = new ArrayList<>();
+ *
+ * 2. 排序
+ *      AnnotationAwareOrderComparator.sort(this.propertySourceLocators);
+ *
+ * 3. 遍历 propertySourceLocators , 然后回调方法得到 PropertySource 收集起来
+ *      for (PropertySourceLocator locator : this.propertySourceLocators) {
+ *          Collection<PropertySource<?>> source = locator.locateCollection(environment);
+ *          sourceList.addAll(source);
+ *      }
+ *
+ * 4. 根据属性值决定插入到Environment的顺序
+ *      spring.cloud.config.overrideSystemProperties 默认是 true
+ *      spring.cloud.config.allowOverride 默认是 true
+ *      spring.cloud.config.overrideNone 默认是 false
+ *
+ *       if !allowOverride || (!overrideNone && overrideSystemProperties)
+ *          通过 PropertySourceLocator 得到的 PropertySource 会添加到最前面,也就是优先生效
+ *       else if overrideNone
+ *          通过 PropertySourceLocator 得到的 PropertySource 会添加到最后面,也就是兜底生效
+ *       else if !overrideSystemProperties
+ *          通过 PropertySourceLocator 得到的 PropertySource 会放在 systemEnvironment 的后面
+ *       else if overrideSystemProperties
+ *          通过 PropertySourceLocator 得到的 PropertySource 会放在 systemEnvironment 的前面
+ *       else
+ *          通过 PropertySourceLocator 得到的 PropertySource 会添加到最后面,也就是兜底生效
+ *
+ *      注：也就是可以通过这三个属性值，决定最终 Environment 属性的读取顺序
+ *
+ * */
+
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(PropertySourceBootstrapProperties.class)
 public class PropertySourceBootstrapConfiguration implements ApplicationListener<ContextRefreshedEvent>,

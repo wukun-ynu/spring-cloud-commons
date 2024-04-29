@@ -74,6 +74,9 @@ import static org.springframework.cloud.util.PropertyUtils.useLegacyProcessing;
  * @author Dave Syer
  *
  */
+// 用于完成SpringCloud的接入的，主要是完成bootstrapContext的创建、bootstrap属性的加载、设置bootstrapContext的属性、设置bootstrapContext的属性、设置bootstrapContext的属性、设置bootstrapContext的属性、设置bootstrapContext的属性、设置bootstrapContext为父容器
+// SpringBoot 启动的生命周期的配置Environment阶段，会发布 ApplicationEnvironmentPreparedEvent 事件，所以 BootstrapApplicationListener 会收到事件
+// 注：spring-cloud-context.jar!/META-INF/spring.factories 中声明了 BootstrapApplicationListener
 public class BootstrapApplicationListener implements ApplicationListener<ApplicationEnvironmentPreparedEvent>, Ordered {
 
 	/**
@@ -96,6 +99,7 @@ public class BootstrapApplicationListener implements ApplicationListener<Applica
 	@Override
 	public void onApplicationEvent(ApplicationEnvironmentPreparedEvent event) {
 		ConfigurableEnvironment environment = event.getEnvironment();
+		// 属性spring.cloud.bootstrap.enabled=false就直接return不做处理
 		if (!bootstrapEnabled(environment) && !useLegacyProcessing(environment)) {
 			return;
 		}
@@ -103,6 +107,7 @@ public class BootstrapApplicationListener implements ApplicationListener<Applica
 		if (environment.getPropertySources().contains(BOOTSTRAP_PROPERTY_SOURCE_NAME)) {
 			return;
 		}
+		// 构造出 bootstrap context, 拷贝 PropertySource、ApplicationContextInitializer 给当前 SpringApplication
 		ConfigurableApplicationContext context = null;
 		String configName = environment.resolvePlaceholders("${spring.cloud.bootstrap.name:bootstrap}");
 		for (ApplicationContextInitializer<?> initializer : event.getSpringApplication().getInitializers()) {
